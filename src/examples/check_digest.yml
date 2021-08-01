@@ -9,7 +9,7 @@ usage:
       triggers:
         - schedule:
             cron: "0 0 * * 0"
-      jobs: 
+      jobs:
         - cron_job
   jobs:
     cron_job:
