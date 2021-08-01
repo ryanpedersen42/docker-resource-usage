@@ -17,4 +17,4 @@ steps:
         echo $percentage >> memory.dat
 
   - store_artifacts:
-      path: memory.dat 
+      path: memory.dat
