@@ -105,4 +105,4 @@ parameters:
   CIRCLE_TOKEN:
     default: CIRCLE_TOKEN
     description: The name of the environmental variable holding your CircleCI Token.
-    type: env_var_name
+    type: env_var_name 

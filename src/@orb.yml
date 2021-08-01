@@ -1,4 +1,4 @@
 version: 2.1
 
 description: >
-  Orb to sample, plot, and notify users of Docker executor resource usage statistics.
+  Orb to sample, plot, and notify users of Docker executor resource usage statistics. 

@@ -17,4 +17,4 @@ usage:
         - image: cimg/base:stable
       steps:
         - docker-resource-digest/check_historical_data:
-            max_acceptable: 90
+            max_acceptable: 90 
