@@ -1,0 +1,20 @@
+description: |
+  Run cron job to get digest
+usage:
+  version: 2.1
+  orbs:
+    docker-resource-digest: ryanpedersen/docker-resource-digest@0.1.0
+  workflows:
+    weekly_workflow:
+      triggers:
+        - schedule:
+            cron: "0 0 * * 0"
+      jobs: 
+        - cron_job
+  jobs:
+    cron_job:
+      docker:
+        - image: cimg/base:stable
+      steps:
+        - docker-resource-digest/check_historical_data:
+            max_acceptable: 90

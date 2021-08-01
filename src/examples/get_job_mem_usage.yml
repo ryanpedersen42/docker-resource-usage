@@ -1,0 +1,18 @@
+description: >
+  Get and store .dat file with memory usage. Command should be last step of the job.
+
+usage:
+  version: 2.1
+  orbs:
+    docker-resource-digest: ryanpedersen/docker-resource-digest@0.1.0
+  jobs:
+    example_docker_job:
+      docker:
+        - image: cimg/base:stable
+      steps:
+        - checkout
+        - run:
+            name: Your job
+            command: |
+              echo "job actions here"
+        - docker-resource-digest/store_usage_allocation

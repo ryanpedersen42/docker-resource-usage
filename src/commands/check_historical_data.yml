@@ -1,0 +1,110 @@
+description: >
+  Get historical data
+
+steps:
+  - run: 
+      name: Check for CircleCI Token
+      command: |
+        : "${<<parameters.CIRCLE_TOKEN>>?CircleCI Token must be set as \
+        Environment variables before running this job.}"
+  - run:
+      name: Install jq
+      command: |
+        if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
+        $SUDO apt-get update && $SUDO apt-get install -y jq
+  - run:
+      name: Get pipeline and store workflow IDs
+      command: |
+        PIPELINE_API_CALL=`curl -u ${CIRCLE_TOKEN}: --header "Content-Type: application/json" -X GET https://circleci.com/api/v2/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline`
+
+        #https://circleci.com/docs/api/v2/#get-a-pipeline-39-s-workflows
+        echo $PIPELINE_API_CALL | jq .items | jq -c '.[]' $ARRAY | while read i; do
+          echo $i | if jq .id;
+            then
+              echo $i | jq .id >> temp_workflow_ids.txt
+            else
+              echo skipping  
+          fi
+        done 
+
+        #rm quotes to work with while loop
+        sed 's/\"//g' temp_workflow_ids.txt >> workflow_ids.txt
+  - run:
+      name: Get job info
+      command: |
+        while IFS= read -r ENTRY; do
+          WORKFLOW_API_CALL=`curl -u ${CIRCLE_TOKEN}: --header "Content-Type: application/json" -X GET "https://circleci.com/api/v2/pipeline/$ENTRY/workflow"`
+          echo $WORKFLOW_API_CALL | jq .items | jq -c '.[]' $ARRAY | while read i; do
+            echo $i | if jq .id;
+              then 
+                echo $i | jq .id >> temp_jobs.txt
+              else
+                echo skipping
+            fi
+          done
+        done < workflow_ids.txt
+        sed 's/\"//g' temp_jobs.txt >> job_info.txt
+
+  - run:
+      name: Get job numbers
+      command: |
+        while IFS= read -r ENTRY; do
+          JOB_API_CALL=`curl -u ${CIRCLE_TOKEN}: --header "Content-Type: application/json" -X GET "https://circleci.com/api/v2/workflow/$ENTRY/job"`
+          echo $JOB_API_CALL | jq .items | jq -c '.[]' $ARRAY | while read i; do
+            echo $i | if jq .job_number;
+              then 
+                echo $i | jq .job_number >> job_numbers.txt
+              else
+                echo no
+            fi
+          done
+        done < job_info.txt
+
+  - run:
+      name: Get job artifacts
+      command: |
+        set +e
+        touch digest-${CIRCLE_PROJECT_REPONAME}-${CIRCLE_BUILD-NUM}.txt
+        while IFS= read -r ENTRY; do
+        ARTIFACT_API_CALL=`curl -u ${CIRCLE_TOKEN}: --header "Content-Type: application/json" -X GET "https://circleci.com/api/v2/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/$ENTRY/artifacts" \
+            | grep -o 'https://[^"]*' \
+            | wget --verbose --header "Circle-Token: $CIRCLE_TOKEN" --input-file -`
+          $ARTIFACT_API_CALL 2>/dev/null
+          if [ -f "memory.dat" ]; then
+            rm digest.txt
+            mkdir /tmp/digest-artifacts
+            #check for artifact 
+            echo "found matching artifact"
+            percentage=$( tail -n 1 memory.dat )
+            MAX_ACCEPTABLE="<<parameters.max_acceptable>>"
+            MIN_ACCEPTABLE="<<parameters.min_acceptable>>"
+            if [ $percentage \> $MAX_ACCEPTABLE ] || [ $MIN_ACCEPTABLE \> $percentage ];
+            then 
+               echo "job $ENTRY is using $percentage % of memory, and your threshold is between $MIN_ACCEPTABLE % and $MAX_ACCEPTABLE %" >> /tmp/digest-artifacts/digest-${CIRCLE_PROJECT_REPONAME}-${CIRCLE_BUILD_NUM}.txt
+            else
+               echo "usage within boundaries"
+            fi
+            rm memory.dat
+          else 
+            echo "skipping job, no artifact"
+          fi
+        done < job_numbers.txt
+
+  - store_artifacts:
+      path: /tmp/digest-artifacts
+      
+parameters:
+  max_acceptable:
+    type: integer
+    description: |
+      Max acceptable % of memory that a job can use
+    default: 100
+  min_acceptable:
+    type: integer
+    description: |
+      Min acceptable % of memory that a job can use
+    default: 0
+  CIRCLE_TOKEN:
+    default: CIRCLE_TOKEN
+    description: The name of the environmental variable holding your CircleCI Token.
+    type: env_var_name 

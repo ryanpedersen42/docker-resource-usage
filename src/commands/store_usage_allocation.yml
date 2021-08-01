@@ -1,0 +1,20 @@
+description: >
+  See and save mem usage relative to max memory
+
+steps:
+  - run:
+      name: Get memory used, memory max, and percentage used
+      command: |
+        echo "export mem_usage=$(cat /sys/fs/cgroup/memory/memory.usage_in_bytes)" >> $BASH_ENV
+        echo "export mem_max=$(cat /sys/fs/cgroup/memory/memory.limit_in_bytes)" >> $BASH_ENV
+
+  - run:
+      name: Store artifacts to be used
+      command: |
+        percentage=`echo - | awk "BEGIN {printf \"%.2f\n\", $mem_usage/$mem_max * 100}"`
+        echo $mem_usage >> memory.dat
+        echo $mem_max >> memory.dat
+        echo $percentage >> memory.dat
+
+  - store_artifacts:
+      path: memory.dat
