@@ -9,7 +9,7 @@ steps:
         Environment variables before running this job.}"
   - run:
       name: Install jq
-      command: |
+      command: >
         if [[ $EUID == 0 ]]; then export SUDO=""; else export SUDO="sudo"; fi
         $SUDO apt-get update && $SUDO apt-get install -y jq
   - run:
@@ -23,9 +23,9 @@ steps:
             then
               echo $i | jq .id >> temp_workflow_ids.txt
             else
-              echo skipping  
+              echo skipping
           fi
-        done 
+        done
 
         #rm quotes to work with while loop
         sed 's/\"//g' temp_workflow_ids.txt >> workflow_ids.txt
