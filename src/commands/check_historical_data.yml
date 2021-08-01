@@ -2,7 +2,7 @@ description: >
   Get historical data
 
 steps:
-  - run: 
+  - run:
       name: Check for CircleCI Token
       command: |
         : "${<<parameters.CIRCLE_TOKEN>>?CircleCI Token must be set as \
@@ -14,7 +14,7 @@ steps:
         $SUDO apt-get update && $SUDO apt-get install -y jq
   - run:
       name: Get pipeline and store workflow IDs
-      command: |
+      command: >
         PIPELINE_API_CALL=`curl -u ${CIRCLE_TOKEN}: --header "Content-Type: application/json" -X GET https://circleci.com/api/v2/project/github/$CIRCLE_PROJECT_USERNAME/$CIRCLE_PROJECT_REPONAME/pipeline`
 
         #https://circleci.com/docs/api/v2/#get-a-pipeline-39-s-workflows
